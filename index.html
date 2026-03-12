@@ -615,9 +615,9 @@ function getAudioCtx() {
 // iOS Safari requires audio to be initiated from a direct user gesture.
 // We play a silent buffer on the first touch/click to permanently unlock audio.
 function unlockAudio() {
-  if (audioUnlocked) return Promise.resolve();
   const ctx = getAudioCtx();
   return ctx.resume().then(() => {
+    // Play a short silent buffer to fully unlock audio on iOS
     const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
     const src = ctx.createBufferSource();
     src.buffer = buf;
@@ -627,8 +627,13 @@ function unlockAudio() {
   });
 }
 
-document.addEventListener('touchstart', unlockAudio, { once: true });
-document.addEventListener('click', unlockAudio, { once: true });
+// iOS needs repeated unlock attempts — don't use { once: true }
+function tryUnlock() {
+  if (!audioUnlocked) unlockAudio();
+}
+document.addEventListener('touchstart', tryUnlock);
+document.addEventListener('touchend', tryUnlock);
+document.addEventListener('click', tryUnlock);
 
 function playGuitarNote(freq, duration = 2.0, options = {}) {
   const ctx = getAudioCtx();
@@ -1152,12 +1157,13 @@ function startTraining() {
   renderFretboard();
   renderNoteButtons();
 
-  // Ensure audio is unlocked (iOS), then play root and start
-  unlockAudio().then(() => {
-    const rootMidi = noteIndex(state.root) + 48;
-    playGuitarNote(midiToFreq(rootMidi), 1.5);
-    setTimeout(() => nextRound(), 1600);
-  });
+  // Unlock audio and play root immediately within user gesture
+  const ctx = getAudioCtx();
+  ctx.resume();
+  audioUnlocked = true;
+  const rootMidi = noteIndex(state.root) + 48;
+  playGuitarNote(midiToFreq(rootMidi), 1.5);
+  setTimeout(() => nextRound(), 1600);
 }
 
 function nextRound() {
