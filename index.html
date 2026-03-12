@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Guitar Ear Trainer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #1a1a2e;
+  --bg2: #16213e;
+  --bg3: #0f3460;
+  --accent: #e94560;
+  --accent2: #533483;
+  --text: #eee;
+  --text2: #aaa;
+  --correct: #00c853;
+  --wrong: #ff1744;
+  --fretboard-bg: #3e2723;
+  --string-color: #bdbdbd;
+  --fret-color: #9e9e9e;
+  --dot-color: rgba(255,255,255,0.15);
+  --scale-note: rgba(83,52,131,0.5);
+  --scale-note-border: rgba(233,69,96,0.6);
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+h1 { font-size: 1.6rem; font-weight: 600; }
+h2 { font-size: 1.2rem; font-weight: 500; color: var(--text2); }
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.15s;
+}
+button:hover { filter: brightness(1.15); }
+button:active { transform: scale(0.97); }
+
+/* Setup Screen */
+#setup {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+#setup h1 { text-align: center; margin-bottom: 8px; }
+#setup h2 { text-align: center; margin-bottom: 32px; }
+.setup-section {
+  margin-bottom: 24px;
+}
+.setup-section label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  padding: 8px 16px;
+  background: var(--bg2);
+  border: 2px solid transparent;
+  color: var(--text);
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+.pill.active {
+  border-color: var(--accent);
+  background: rgba(233,69,96,0.15);
+}
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.range-row select {
+  background: var(--bg2);
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.range-row select:focus { border-color: var(--accent); outline: none; }
+.string-toggles {
+  display: flex;
+  gap: 8px;
+}
+.string-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 2px solid transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.string-toggle.active {
+  border-color: var(--accent);
+  background: rgba(233,69,96,0.15);
+}
+#startBtn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: var(--accent);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 32px;
+  border-radius: 12px;
+}
+
+/* Training Screen */
+#training {
+  display: none;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.top-bar .info {
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+.top-bar .info strong { color: var(--text); }
+.score-display {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.score-display .stat {
+  text-align: center;
+}
+.score-display .stat .num {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.score-display .stat .lbl {
+  font-size: 0.7rem;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+#backBtn {
+  background: var(--bg2);
+  color: var(--text2);
+  padding: 8px 16px;
+  font-size: 0.8rem;
+}
+
+/* Fretboard */
+.fretboard-container {
+  background: var(--fretboard-bg);
+  border-radius: 12px;
+  padding: 16px 0;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  position: relative;
+}
+.fretboard {
+  position: relative;
+  margin: 0 auto;
+}
+.fret-numbers {
+  display: flex;
+  padding: 0 0 8px 0;
+}
+.fret-number {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text2);
+}
+.strings-area {
+  position: relative;
+}
+.string-row {
+  display: flex;
+  position: relative;
+  height: 32px;
+  align-items: center;
+}
+.string-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-50%);
+}
+.fret-cell {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.fret-cell:hover { background: rgba(255,255,255,0.05); }
+.fret-wire {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--fret-color);
+}
+.nut {
+  width: 4px !important;
+  background: #e0e0e0;
+}
+.dot-marker {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dot-color);
+}
+.scale-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--scale-note);
+  border: 2px solid var(--scale-note-border);
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.7);
+  pointer-events: none;
+}
+.scale-dot.root-dot {
+  background: rgba(233,69,96,0.4);
+  border-color: var(--accent);
+}
+.scale-dot.correct-flash {
+  background: var(--correct);
+  border-color: var(--correct);
+  color: white;
+  font-weight: 700;
+  font-size: 0.7rem;
+  animation: pulse 0.5s ease 3;
+}
+.scale-dot.wrong-flash {
+  background: var(--wrong);
+  border-color: var(--wrong);
+  color: white;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+.string-label {
+  width: 30px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+/* Controls */
+.controls-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.ctrl-btn {
+  padding: 10px 18px;
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctrl-btn .shortcut {
+  font-size: 0.7rem;
+  color: var(--text2);
+  background: rgba(255,255,255,0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Note Buttons */
+.guess-section {
+  margin-bottom: 16px;
+}
+.guess-section .section-label {
+  font-size: 0.8rem;
+  color: var(--text2);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.note-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.note-btn {
+  min-width: 52px;
+  padding: 14px 8px;
+  background: var(--bg3);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+  text-align: center;
+}
+.note-btn:hover { border-color: var(--accent); }
+.note-btn.correct { background: var(--correct); color: white; border-color: var(--correct); }
+.note-btn.wrong { background: var(--wrong); color: white; border-color: var(--wrong); }
+.note-btn.reveal { border-color: var(--correct); }
+.note-btn[disabled] { opacity: 0.5; pointer-events: none; }
+
+/* Feedback */
+#feedback {
+  text-align: center;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+#feedback .result {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+#feedback .detail {
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+#nextBtn {
+  display: none;
+  padding: 12px 32px;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 auto;
+}
+
+/* Summary Screen */
+#summary {
+  display: none;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+#summary h1 { margin-bottom: 24px; }
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.summary-card {
+  background: var(--bg2);
+  border-radius: 12px;
+  padding: 20px;
+}
+.summary-card .num { font-size: 1.8rem; font-weight: 700; }
+.summary-card .lbl { font-size: 0.8rem; color: var(--text2); }
+.weakness-list {
+  text-align: left;
+  background: var(--bg2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.weakness-list h3 { margin-bottom: 12px; font-size: 1rem; }
+.weakness-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.9rem;
+}
+.weakness-item .pct { font-weight: 600; }
+.weakness-item .pct.bad { color: var(--wrong); }
+.weakness-item .pct.ok { color: #ffc107; }
+.weakness-item .pct.good { color: var(--correct); }
+#restartBtn, #newSetupBtn {
+  padding: 14px 32px;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 8px;
+}
+#newSetupBtn { background: var(--bg2); }
+
+/* Technique badge */
+.technique-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  background: var(--accent2);
+  color: var(--text);
+  margin-left: 6px;
+}
+
+/* Touch / iPad adjustments */
+@media (pointer: coarse) {
+  .fret-cell { min-height: 40px; }
+  .scale-dot { width: 28px; height: 28px; font-size: 0.7rem; }
+  .note-btn { min-width: 60px; padding: 16px 10px; font-size: 1.1rem; }
+  .pill { padding: 10px 18px; font-size: 0.95rem; }
+  .ctrl-btn { padding: 14px 20px; font-size: 0.95rem; }
+  .string-toggle { width: 50px; height: 50px; font-size: 0.9rem; }
+  #nextBtn { padding: 16px 40px; font-size: 1.1rem; }
+  #startBtn { padding: 18px; font-size: 1.2rem; }
+}
+@media (max-width: 768px) {
+  #training { padding: 12px; }
+  .top-bar { flex-wrap: wrap; gap: 8px; }
+  .fretboard-container { -webkit-overflow-scrolling: touch; }
+}
+
+/* Prevent double-tap zoom on buttons */
+button { touch-action: manipulation; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup">
+  <h1>Guitar Ear Trainer</h1>
+  <h2>Train your ear to recognize notes on the fretboard</h2>
+
+  <div class="setup-section">
+    <label>Root Note</label>
+    <div class="pill-group" id="rootPills"></div>
+  </div>
+
+  <div class="setup-section">
+    <label>Scale</label>
+    <div class="pill-group" id="scalePills"></div>
+  </div>
+
+  <div class="setup-section">
+    <label>Fret Range</label>
+    <div class="range-row">
+      <span>From fret</span>
+      <select id="fretFrom"></select>
+      <span>to fret</span>
+      <select id="fretTo"></select>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <label>Strings</label>
+    <div class="string-toggles" id="stringToggles"></div>
+  </div>
+
+  <div class="setup-section">
+    <label>Difficulty</label>
+    <div class="pill-group" id="diffPills"></div>
+  </div>
+
+  <div class="setup-section">
+    <label>Rounds</label>
+    <div class="pill-group" id="roundPills"></div>
+  </div>
+
+  <button id="startBtn">Start Training</button>
+</div>
+
+<!-- TRAINING SCREEN -->
+<div id="training">
+  <div class="top-bar">
+    <div class="info">
+      <strong id="keyDisplay">E Minor Pentatonic</strong> &middot;
+      <span id="roundDisplay">Round 1/20</span>
+    </div>
+    <div class="score-display">
+      <div class="stat"><div class="num" id="scoreNum">0/0</div><div class="lbl">Score</div></div>
+      <div class="stat"><div class="num" id="streakNum">0</div><div class="lbl">Streak</div></div>
+      <button id="backBtn">End Session</button>
+    </div>
+  </div>
+
+  <div class="fretboard-container">
+    <div class="fretboard" id="fretboard"></div>
+  </div>
+
+  <div class="controls-row">
+    <button class="ctrl-btn" id="playRootBtn">Play Root <span class="shortcut">R</span></button>
+    <button class="ctrl-btn" id="replayBtn">Replay Note <span class="shortcut">P</span></button>
+    <button class="ctrl-btn" id="playScaleBtn">Play Scale <span class="shortcut">S</span></button>
+  </div>
+
+  <div class="guess-section">
+    <div class="section-label">What note is it? <span style="font-size:0.75rem;color:var(--text2)">(or click the fretboard)</span></div>
+    <div class="note-buttons" id="noteButtons"></div>
+  </div>
+
+  <div id="feedback"></div>
+  <button id="nextBtn">Next Note <span class="shortcut" style="margin-left:8px">Space</span></button>
+</div>
+
+<!-- SUMMARY SCREEN -->
+<div id="summary">
+  <h1>Session Complete</h1>
+  <div class="summary-grid">
+    <div class="summary-card"><div class="num" id="sumScore">0%</div><div class="lbl">Accuracy</div></div>
+    <div class="summary-card"><div class="num" id="sumCorrect">0/0</div><div class="lbl">Correct</div></div>
+    <div class="summary-card"><div class="num" id="sumStreak">0</div><div class="lbl">Best Streak</div></div>
+  </div>
+  <div class="weakness-list" id="weaknessList">
+    <h3>Accuracy by Note</h3>
+  </div>
+  <button id="restartBtn">Play Again</button>
+  <button id="newSetupBtn">New Setup</button>
+</div>
+
+<script>
+// ============================================================
+// MUSIC THEORY DATA
+// ============================================================
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const ENHARMONIC = {'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb'};
+const STRING_OPEN = [64, 59, 55, 50, 45, 40]; // high E, B, G, D, A, low E (MIDI)
+const STRING_LABELS = ['e','B','G','D','A','E'];
+const DOT_FRETS = [3,5,7,9,12,15,17,19,21];
+const DOUBLE_DOT = [12];
+
+const SCALES = {
+  'Minor Pentatonic': [0,3,5,7,10],
+  'Major Pentatonic': [0,2,4,7,9],
+  'Natural Minor':    [0,2,3,5,7,8,10],
+  'Major':            [0,2,4,5,7,9,11],
+  'Dorian':           [0,2,3,5,7,9,10],
+  'Mixolydian':       [0,2,4,5,7,9,10],
+  'Blues':             [0,3,5,6,7,10],
+  'Harmonic Minor':   [0,2,3,5,7,8,11],
+  'Phrygian':         [0,1,3,5,7,8,10],
+};
+
+const INTERVAL_NAMES = {
+  0:'Root', 1:'b2', 2:'2nd', 3:'b3', 4:'3rd', 5:'4th',
+  6:'b5', 7:'5th', 8:'b6', 9:'6th', 10:'b7', 11:'7th'
+};
+
+const ROOTS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function noteIndex(name) { return NOTE_NAMES.indexOf(name); }
+function midiToNoteName(midi) { return NOTE_NAMES[midi % 12]; }
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  root: 'E',
+  scale: 'Minor Pentatonic',
+  fretFrom: 0,
+  fretTo: 12,
+  strings: [true,true,true,true,true,true],
+  difficulty: 'Medium',
+  totalRounds: 20,
+  currentRound: 0,
+  correct: 0,
+  streak: 0,
+  bestStreak: 0,
+  answered: false,
+  currentNote: null, // {midi, string, fret, noteName, interval}
+  technique: null, // null | 'bend' | 'slide' | 'hammer' | 'vibrato'
+  noteStats: {}, // noteName -> {correct, total}
+  availableNotes: [],
+};
+
+// ============================================================
+// AUDIO ENGINE — Karplus-Strong Guitar Synthesis
+// ============================================================
+let audioCtx = null;
+let audioUnlocked = false;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// iOS Safari requires audio to be initiated from a direct user gesture.
+// We play a silent buffer on the first touch/click to permanently unlock audio.
+function unlockAudio() {
+  if (audioUnlocked) return Promise.resolve();
+  const ctx = getAudioCtx();
+  return ctx.resume().then(() => {
+    const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    audioUnlocked = true;
+  });
+}
+
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
+
+function playGuitarNote(freq, duration = 2.0, options = {}) {
+  const ctx = getAudioCtx();
+  const sampleRate = ctx.sampleRate;
+  const period = Math.round(sampleRate / freq);
+  const bufferSize = Math.round(sampleRate * duration);
+  const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  // Initialize with filtered noise burst (pluck excitation)
+  const burstLen = period * 2;
+  for (let i = 0; i < burstLen && i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.8;
+  }
+  // Simple low-pass on the burst for warmth
+  for (let i = 1; i < burstLen && i < bufferSize; i++) {
+    data[i] = data[i] * 0.6 + data[i - 1] * 0.4;
+  }
+
+  // Karplus-Strong with damping
+  const damping = 0.996 + (freq < 200 ? 0.002 : 0);
+  const brightness = 0.45; // lower = warmer (neck pickup feel)
+  for (let i = period; i < bufferSize; i++) {
+    const prev = data[i - period];
+    const prevPrev = data[i - period + 1] || prev;
+    data[i] += damping * (brightness * prev + (1 - brightness) * prevPrev);
+  }
+
+  // Apply vibrato if requested
+  if (options.vibrato) {
+    const vibRate = 5 + Math.random() * 2;
+    const vibDepth = 0.002 + Math.random() * 0.002;
+    const vibBuf = ctx.createBuffer(1, bufferSize, sampleRate);
+    const vibData = vibBuf.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      const delay = vibDepth * Math.sin(2 * Math.PI * vibRate * i / sampleRate);
+      const readPos = i - delay * sampleRate;
+      const idx = Math.floor(readPos);
+      const frac = readPos - idx;
+      if (idx >= 0 && idx < bufferSize - 1) {
+        vibData[i] = data[idx] * (1 - frac) + data[idx + 1] * frac;
+      } else if (idx >= 0 && idx < bufferSize) {
+        vibData[i] = data[idx];
+      }
+    }
+    for (let i = 0; i < bufferSize; i++) data[i] = vibData[i];
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+
+  // Body resonance filter
+  const bodyFilter = ctx.createBiquadFilter();
+  bodyFilter.type = 'peaking';
+  bodyFilter.frequency.value = 250;
+  bodyFilter.Q.value = 2;
+  bodyFilter.gain.value = 3;
+
+  // Gentle high-cut for warmth
+  const lpf = ctx.createBiquadFilter();
+  lpf.type = 'lowpass';
+  lpf.frequency.value = 3500 + freq * 2;
+  lpf.Q.value = 0.7;
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.6, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+  source.connect(bodyFilter);
+  bodyFilter.connect(lpf);
+  lpf.connect(gain);
+  gain.connect(ctx.destination);
+  source.start(ctx.currentTime);
+  source.stop(ctx.currentTime + duration);
+  return { source, gain, ctx };
+}
+
+function playBend(fromFreq, toFreq, duration = 2.0) {
+  const ctx = getAudioCtx();
+  const sr = ctx.sampleRate;
+  const period = Math.round(sr / fromFreq);
+  const bufSize = Math.round(sr * duration);
+  const buffer = ctx.createBuffer(1, bufSize, sr);
+  const data = buffer.getChannelData(0);
+
+  // Burst
+  for (let i = 0; i < period * 2 && i < bufSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.7;
+    if (i > 0) data[i] = data[i] * 0.6 + data[i - 1] * 0.4;
+  }
+
+  // KS with pitch bending
+  const bendDuration = 0.3 + Math.random() * 0.2;
+  const bendSamples = Math.round(sr * bendDuration);
+  const damping = 0.996;
+  let currentPeriod = sr / fromFreq;
+  const targetPeriod = sr / toFreq;
+
+  for (let i = period; i < bufSize; i++) {
+    // Interpolate period during bend
+    if (i < bendSamples) {
+      const t = i / bendSamples;
+      const eased = t * t * (3 - 2 * t); // smoothstep
+      currentPeriod = (sr / fromFreq) + ((sr / toFreq) - (sr / fromFreq)) * eased;
+    } else {
+      currentPeriod = targetPeriod;
+    }
+    const readIdx = i - currentPeriod;
+    const idx = Math.floor(readIdx);
+    const frac = readIdx - idx;
+    if (idx >= 0 && idx < bufSize - 1) {
+      const sample = data[idx] * (1 - frac) + data[idx + 1] * frac;
+      data[i] += damping * sample;
+    }
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const bodyFilter = ctx.createBiquadFilter();
+  bodyFilter.type = 'peaking'; bodyFilter.frequency.value = 250; bodyFilter.Q.value = 2; bodyFilter.gain.value = 3;
+  const lpf = ctx.createBiquadFilter();
+  lpf.type = 'lowpass'; lpf.frequency.value = 3500; lpf.Q.value = 0.7;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.6, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  source.connect(bodyFilter); bodyFilter.connect(lpf); lpf.connect(gain); gain.connect(ctx.destination);
+  source.start(); source.stop(ctx.currentTime + duration);
+}
+
+function playSlide(fromFreq, toFreq, duration = 2.0) {
+  const ctx = getAudioCtx();
+  const sr = ctx.sampleRate;
+  const initPeriod = Math.round(sr / fromFreq);
+  const bufSize = Math.round(sr * duration);
+  const buffer = ctx.createBuffer(1, bufSize, sr);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < initPeriod * 2 && i < bufSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.65;
+    if (i > 0) data[i] = data[i] * 0.6 + data[i - 1] * 0.4;
+  }
+
+  const slideDur = 0.12 + Math.random() * 0.08;
+  const slideSamples = Math.round(sr * slideDur);
+  const damping = 0.995;
+
+  for (let i = initPeriod; i < bufSize; i++) {
+    let currentPeriod;
+    if (i < slideSamples) {
+      const t = i / slideSamples;
+      currentPeriod = (sr / fromFreq) + ((sr / toFreq) - (sr / fromFreq)) * t;
+    } else {
+      currentPeriod = sr / toFreq;
+    }
+    const readIdx = i - currentPeriod;
+    const idx = Math.floor(readIdx);
+    const frac = readIdx - idx;
+    if (idx >= 0 && idx < bufSize - 1) {
+      data[i] += damping * (data[idx] * (1 - frac) + data[idx + 1] * frac);
+    }
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const lpf = ctx.createBiquadFilter();
+  lpf.type = 'lowpass'; lpf.frequency.value = 3500; lpf.Q.value = 0.7;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.55, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  source.connect(lpf); lpf.connect(gain); gain.connect(ctx.destination);
+  source.start(); source.stop(ctx.currentTime + duration);
+}
+
+function playHammerOn(fromMidi, toMidi, duration = 2.0) {
+  // Play the lower note, then a slightly softer attack on the target
+  const ctx = getAudioCtx();
+  playGuitarNote(midiToFreq(fromMidi), 0.25, {});
+  setTimeout(() => {
+    playGuitarNote(midiToFreq(toMidi), duration, { vibrato: Math.random() > 0.5 });
+  }, 200);
+}
+
+function playNoteWithTechnique(midi, technique) {
+  const freq = midiToFreq(midi);
+  if (technique === 'bend') {
+    const bendFrom = Math.random() > 0.5 ? midi - 1 : midi - 2; // half or whole step
+    playBend(midiToFreq(bendFrom), freq);
+  } else if (technique === 'slide') {
+    const dir = Math.random() > 0.5 ? -1 : 1;
+    const dist = Math.random() > 0.5 ? 1 : 2;
+    playSlide(midiToFreq(midi + dir * dist), freq);
+  } else if (technique === 'hammer') {
+    const fromMidi = midi - (Math.random() > 0.5 ? 1 : 2);
+    playHammerOn(fromMidi, midi);
+  } else if (technique === 'vibrato') {
+    playGuitarNote(freq, 2.5, { vibrato: true });
+  } else {
+    playGuitarNote(freq, 2.0, { vibrato: Math.random() > 0.7 });
+  }
+}
+
+function playScale(rootMidi, intervals, ascending = true) {
+  const ctx = getAudioCtx();
+  const notes = ascending ? [...intervals] : [...intervals].reverse();
+  notes.forEach((interval, i) => {
+    setTimeout(() => {
+      playGuitarNote(midiToFreq(rootMidi + interval), 0.8);
+    }, i * 350);
+  });
+}
+
+// ============================================================
+// SETUP UI
+// ============================================================
+function buildSetup() {
+  // Root pills
+  const rootDiv = document.getElementById('rootPills');
+  ROOTS.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (r === state.root ? ' active' : '');
+    const display = ENHARMONIC[r] ? `${r}/${ENHARMONIC[r]}` : r;
+    btn.textContent = display;
+    btn.onclick = () => {
+      state.root = r;
+      rootDiv.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    rootDiv.appendChild(btn);
+  });
+
+  // Scale pills
+  const scaleDiv = document.getElementById('scalePills');
+  Object.keys(SCALES).forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (s === state.scale ? ' active' : '');
+    btn.textContent = s;
+    btn.onclick = () => {
+      state.scale = s;
+      scaleDiv.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    scaleDiv.appendChild(btn);
+  });
+
+  // Fret selects
+  const fromSel = document.getElementById('fretFrom');
+  const toSel = document.getElementById('fretTo');
+  for (let i = 0; i <= 21; i++) {
+    fromSel.add(new Option(i, i));
+    toSel.add(new Option(i, i));
+  }
+  fromSel.value = '0'; toSel.value = '12';
+  fromSel.onchange = () => state.fretFrom = parseInt(fromSel.value);
+  toSel.onchange = () => state.fretTo = parseInt(toSel.value);
+
+  // String toggles
+  const strDiv = document.getElementById('stringToggles');
+  STRING_LABELS.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'string-toggle active';
+    btn.textContent = s;
+    btn.onclick = () => {
+      state.strings[i] = !state.strings[i];
+      btn.classList.toggle('active');
+    };
+    strDiv.appendChild(btn);
+  });
+
+  // Difficulty
+  const diffDiv = document.getElementById('diffPills');
+  ['Easy','Medium','Hard'].forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (d === state.difficulty ? ' active' : '');
+    btn.textContent = d;
+    btn.onclick = () => {
+      state.difficulty = d;
+      diffDiv.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    diffDiv.appendChild(btn);
+  });
+
+  // Rounds
+  const roundDiv = document.getElementById('roundPills');
+  [10,20,30,50].forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (n === state.totalRounds ? ' active' : '');
+    btn.textContent = n;
+    btn.onclick = () => {
+      state.totalRounds = n;
+      roundDiv.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    roundDiv.appendChild(btn);
+  });
+}
+
+// ============================================================
+// BUILD AVAILABLE NOTES
+// ============================================================
+function buildAvailableNotes() {
+  const rootIdx = noteIndex(state.root);
+  const intervals = SCALES[state.scale];
+  const notes = [];
+
+  // For "Easy": pick a subset of intervals
+  let activeIntervals = intervals;
+  if (state.difficulty === 'Easy') {
+    // Pick first 4 intervals (or all if fewer)
+    activeIntervals = intervals.slice(0, Math.min(4, intervals.length));
+  }
+
+  // For "Hard": add chromatic passing tones
+  if (state.difficulty === 'Hard') {
+    activeIntervals = [];
+    for (let i = 0; i < 12; i++) activeIntervals.push(i);
+  }
+
+  for (let si = 0; si < 6; si++) {
+    if (!state.strings[si]) continue;
+    for (let fret = state.fretFrom; fret <= state.fretTo; fret++) {
+      const midi = STRING_OPEN[si] + fret;
+      const notePC = midi % 12;
+      const interval = (notePC - rootIdx + 12) % 12;
+      if (activeIntervals.includes(interval)) {
+        notes.push({
+          midi, string: si, fret,
+          noteName: midiToNoteName(midi),
+          interval
+        });
+      }
+    }
+  }
+  state.availableNotes = notes;
+}
+
+function getScaleNotes() {
+  const rootIdx = noteIndex(state.root);
+  const intervals = SCALES[state.scale];
+  const notes = [];
+  for (let si = 0; si < 6; si++) {
+    if (!state.strings[si]) continue;
+    for (let fret = state.fretFrom; fret <= state.fretTo; fret++) {
+      const midi = STRING_OPEN[si] + fret;
+      const notePC = midi % 12;
+      const interval = (notePC - rootIdx + 12) % 12;
+      if (intervals.includes(interval)) {
+        notes.push({ midi, string: si, fret, noteName: midiToNoteName(midi), interval });
+      }
+    }
+  }
+  return notes;
+}
+
+// ============================================================
+// FRETBOARD RENDERING
+// ============================================================
+function renderFretboard() {
+  const fb = document.getElementById('fretboard');
+  fb.innerHTML = '';
+  const fretCount = state.fretTo - state.fretFrom + 1;
+  const cellWidth = Math.max(50, Math.min(70, (880 - 30) / fretCount));
+  const totalWidth = 30 + fretCount * cellWidth;
+  fb.style.width = totalWidth + 'px';
+
+  // Fret numbers
+  const numRow = document.createElement('div');
+  numRow.className = 'fret-numbers';
+  numRow.innerHTML = `<div style="width:30px"></div>`;
+  for (let f = state.fretFrom; f <= state.fretTo; f++) {
+    const d = document.createElement('div');
+    d.className = 'fret-number';
+    d.style.width = cellWidth + 'px';
+    d.textContent = f;
+    numRow.appendChild(d);
+  }
+  fb.appendChild(numRow);
+
+  // Strings area
+  const strArea = document.createElement('div');
+  strArea.className = 'strings-area';
+  strArea.id = 'stringsArea';
+
+  const scaleNotes = getScaleNotes();
+  const rootIdx = noteIndex(state.root);
+
+  for (let si = 0; si < 6; si++) {
+    const row = document.createElement('div');
+    row.className = 'string-row';
+    if (!state.strings[si]) row.style.opacity = '0.3';
+
+    // String label
+    const lbl = document.createElement('div');
+    lbl.className = 'string-label';
+    lbl.textContent = STRING_LABELS[si];
+    row.appendChild(lbl);
+
+    // String line
+    const thickness = [0.5, 0.7, 1, 1.2, 1.5, 1.8][si];
+    const line = document.createElement('div');
+    line.className = 'string-line';
+    line.style.left = '30px';
+    line.style.height = thickness + 'px';
+    line.style.background = `linear-gradient(to right, #d4c5a9, ${si >= 3 ? '#c0b090' : '#e8dcc8'})`;
+    row.appendChild(line);
+
+    for (let f = state.fretFrom; f <= state.fretTo; f++) {
+      const cell = document.createElement('div');
+      cell.className = 'fret-cell';
+      cell.style.width = cellWidth + 'px';
+      cell.dataset.string = si;
+      cell.dataset.fret = f;
+
+      // Fret wire
+      if (f > 0) {
+        const wire = document.createElement('div');
+        wire.className = 'fret-wire';
+        if (f === state.fretFrom && state.fretFrom === 0) wire.classList.add('nut');
+        cell.appendChild(wire);
+      }
+      // Nut at fret 0
+      if (f === 0) {
+        const nut = document.createElement('div');
+        nut.className = 'fret-wire nut';
+        nut.style.right = '0';
+        cell.appendChild(nut);
+      }
+
+      // Dot inlays (between strings 2-3 and 3-4, i.e., si == 2 or 3)
+      if (si === 3 && DOT_FRETS.includes(f)) {
+        const dot = document.createElement('div');
+        dot.className = 'dot-marker';
+        if (DOUBLE_DOT.includes(f)) {
+          dot.style.bottom = '-14px';
+          const dot2 = document.createElement('div');
+          dot2.className = 'dot-marker';
+          dot2.style.top = '-14px';
+          dot2.style.left = '50%';
+          dot2.style.transform = 'translateX(-50%)';
+          cell.appendChild(dot2);
+        }
+        dot.style.left = '50%';
+        dot.style.transform = 'translateX(-50%)';
+        cell.appendChild(dot);
+      }
+
+      // Scale note dot
+      const scNote = scaleNotes.find(n => n.string === si && n.fret === f);
+      if (scNote && state.strings[si]) {
+        const sdot = document.createElement('div');
+        sdot.className = 'scale-dot';
+        sdot.id = `dot-${si}-${f}`;
+        if (scNote.interval === 0) sdot.classList.add('root-dot');
+        sdot.textContent = scNote.noteName;
+        cell.appendChild(sdot);
+      }
+
+      // Click handler for guessing
+      if (state.strings[si]) {
+        cell.onclick = () => handleFretClick(si, f);
+      }
+
+      row.appendChild(cell);
+    }
+    strArea.appendChild(row);
+  }
+  fb.appendChild(strArea);
+}
+
+// ============================================================
+// NOTE BUTTONS
+// ============================================================
+function renderNoteButtons() {
+  const container = document.getElementById('noteButtons');
+  container.innerHTML = '';
+  const rootIdx = noteIndex(state.root);
+  const intervals = state.difficulty === 'Hard'
+    ? [0,1,2,3,4,5,6,7,8,9,10,11]
+    : SCALES[state.scale];
+  const usedNames = new Set();
+
+  intervals.forEach((interval, i) => {
+    const notePC = (rootIdx + interval) % 12;
+    const name = NOTE_NAMES[notePC];
+    if (usedNames.has(name)) return;
+    usedNames.add(name);
+    const btn = document.createElement('button');
+    btn.className = 'note-btn';
+    btn.dataset.note = name;
+    const display = ENHARMONIC[name] ? `${name}/${ENHARMONIC[name]}` : name;
+    btn.textContent = display;
+    btn.onclick = () => handleGuess(name);
+    container.appendChild(btn);
+  });
+}
+
+// ============================================================
+// GAME LOGIC
+// ============================================================
+function startTraining() {
+  state.currentRound = 0;
+  state.correct = 0;
+  state.streak = 0;
+  state.bestStreak = 0;
+  state.noteStats = {};
+  state.answered = false;
+  buildAvailableNotes();
+
+  if (state.availableNotes.length === 0) {
+    alert('No notes available with current settings. Try expanding fret range or enabling more strings.');
+    return;
+  }
+
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('training').style.display = 'block';
+  document.getElementById('summary').style.display = 'none';
+
+  const rootDisplay = ENHARMONIC[state.root] ? `${state.root}/${ENHARMONIC[state.root]}` : state.root;
+  document.getElementById('keyDisplay').textContent = `${rootDisplay} ${state.scale}`;
+
+  renderFretboard();
+  renderNoteButtons();
+
+  // Ensure audio is unlocked (iOS), then play root and start
+  unlockAudio().then(() => {
+    const rootMidi = noteIndex(state.root) + 48;
+    playGuitarNote(midiToFreq(rootMidi), 1.5);
+    setTimeout(() => nextRound(), 1600);
+  });
+}
+
+function nextRound() {
+  state.currentRound++;
+  if (state.currentRound > state.totalRounds) {
+    showSummary();
+    return;
+  }
+  state.answered = false;
+
+  // Reset UI
+  document.getElementById('roundDisplay').textContent = `Round ${state.currentRound}/${state.totalRounds}`;
+  document.getElementById('scoreNum').textContent = `${state.correct}/${state.currentRound - 1}`;
+  document.getElementById('streakNum').textContent = state.streak;
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.querySelectorAll('.note-btn').forEach(b => {
+    b.className = 'note-btn';
+    b.disabled = false;
+  });
+
+  // Reset fretboard highlights
+  document.querySelectorAll('.scale-dot').forEach(d => {
+    d.classList.remove('correct-flash', 'wrong-flash');
+    const scaleNotes = getScaleNotes();
+    const si = parseInt(d.id.split('-')[1]);
+    const f = parseInt(d.id.split('-')[2]);
+    const n = scaleNotes.find(x => x.string === si && x.fret === f);
+    if (n) d.textContent = n.noteName;
+  });
+
+  // Pick random note
+  const idx = Math.floor(Math.random() * state.availableNotes.length);
+  state.currentNote = { ...state.availableNotes[idx] };
+
+  // Decide technique (Medium/Hard only)
+  state.technique = null;
+  if (state.difficulty !== 'Easy' && Math.random() > 0.4) {
+    const techniques = ['bend', 'slide', 'vibrato', 'hammer'];
+    state.technique = techniques[Math.floor(Math.random() * techniques.length)];
+  }
+
+  // Play the note
+  setTimeout(() => {
+    playNoteWithTechnique(state.currentNote.midi, state.technique);
+  }, 300);
+}
+
+function handleGuess(noteName) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const correct = noteName === state.currentNote.noteName;
+  const cn = state.currentNote;
+
+  // Update stats
+  if (!state.noteStats[cn.noteName]) state.noteStats[cn.noteName] = { correct: 0, total: 0 };
+  state.noteStats[cn.noteName].total++;
+  if (correct) {
+    state.correct++;
+    state.streak++;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+    state.noteStats[cn.noteName].correct++;
+  } else {
+    state.streak = 0;
+  }
+
+  // Update score display
+  document.getElementById('scoreNum').textContent = `${state.correct}/${state.currentRound}`;
+  document.getElementById('streakNum').textContent = state.streak;
+
+  // Highlight note buttons
+  document.querySelectorAll('.note-btn').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.note === cn.noteName) {
+      b.classList.add(correct ? 'correct' : 'reveal');
+    }
+    if (!correct && b.dataset.note === noteName) {
+      b.classList.add('wrong');
+    }
+  });
+
+  // Highlight fretboard
+  const dot = document.getElementById(`dot-${cn.string}-${cn.fret}`);
+  if (dot) {
+    dot.classList.add('correct-flash');
+    dot.textContent = cn.noteName;
+  }
+
+  // Feedback
+  const intervalName = INTERVAL_NAMES[cn.interval] || `interval ${cn.interval}`;
+  const display = ENHARMONIC[cn.noteName] ? `${cn.noteName}/${ENHARMONIC[cn.noteName]}` : cn.noteName;
+  let techLabel = '';
+  if (state.technique) {
+    const techNames = { bend: 'bent to', slide: 'slide into', hammer: 'hammer-on', vibrato: 'with vibrato' };
+    techLabel = `<span class="technique-badge">${techNames[state.technique]}</span>`;
+  }
+
+  const fb = document.getElementById('feedback');
+  if (correct) {
+    fb.innerHTML = `<div class="result" style="color:var(--correct)">Correct!</div>
+      <div class="detail">${display} — the ${intervalName} (string ${STRING_LABELS[cn.string]}, fret ${cn.fret})${techLabel}</div>`;
+  } else {
+    fb.innerHTML = `<div class="result" style="color:var(--wrong)">Wrong</div>
+      <div class="detail">It was ${display} — the ${intervalName} (string ${STRING_LABELS[cn.string]}, fret ${cn.fret})${techLabel}</div>`;
+    // Replay correct note
+    setTimeout(() => playGuitarNote(midiToFreq(cn.midi), 1.5), 500);
+  }
+
+  document.getElementById('nextBtn').style.display = 'block';
+}
+
+function handleFretClick(string, fret) {
+  if (state.answered) return;
+  const midi = STRING_OPEN[string] + fret;
+  const noteName = midiToNoteName(midi);
+  handleGuess(noteName);
+}
+
+// ============================================================
+// SUMMARY
+// ============================================================
+function showSummary() {
+  document.getElementById('training').style.display = 'none';
+  document.getElementById('summary').style.display = 'block';
+
+  const pct = state.totalRounds > 0 ? Math.round(state.correct / state.totalRounds * 100) : 0;
+  document.getElementById('sumScore').textContent = pct + '%';
+  document.getElementById('sumCorrect').textContent = `${state.correct}/${state.totalRounds}`;
+  document.getElementById('sumStreak').textContent = state.bestStreak;
+
+  const list = document.getElementById('weaknessList');
+  list.innerHTML = '<h3>Accuracy by Note</h3>';
+
+  const entries = Object.entries(state.noteStats).sort((a, b) => {
+    const pA = a[1].total > 0 ? a[1].correct / a[1].total : 1;
+    const pB = b[1].total > 0 ? b[1].correct / b[1].total : 1;
+    return pA - pB;
+  });
+
+  entries.forEach(([note, s]) => {
+    const p = s.total > 0 ? Math.round(s.correct / s.total * 100) : 0;
+    const cls = p < 50 ? 'bad' : p < 75 ? 'ok' : 'good';
+    const display = ENHARMONIC[note] ? `${note}/${ENHARMONIC[note]}` : note;
+    const rootIdx = noteIndex(state.root);
+    const interval = (noteIndex(note) - rootIdx + 12) % 12;
+    const intervalName = INTERVAL_NAMES[interval] || '';
+    const item = document.createElement('div');
+    item.className = 'weakness-item';
+    item.innerHTML = `<span>${display} <span style="color:var(--text2)">(${intervalName})</span></span>
+      <span>${s.correct}/${s.total} <span class="pct ${cls}">${p}%</span></span>`;
+    list.appendChild(item);
+  });
+}
+
+// ============================================================
+// EVENT HANDLERS
+// ============================================================
+document.getElementById('startBtn').onclick = startTraining;
+document.getElementById('nextBtn').onclick = nextRound;
+document.getElementById('backBtn').onclick = () => {
+  if (state.currentRound > 1) showSummary();
+  else {
+    document.getElementById('training').style.display = 'none';
+    document.getElementById('setup').style.display = 'block';
+  }
+};
+document.getElementById('restartBtn').onclick = startTraining;
+document.getElementById('newSetupBtn').onclick = () => {
+  document.getElementById('summary').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+};
+
+document.getElementById('playRootBtn').onclick = () => {
+  unlockAudio().then(() => {
+    const rootMidi = noteIndex(state.root) + 48;
+    playGuitarNote(midiToFreq(rootMidi), 1.5);
+  });
+};
+document.getElementById('replayBtn').onclick = () => {
+  unlockAudio().then(() => {
+    if (state.currentNote) {
+      playNoteWithTechnique(state.currentNote.midi, state.technique);
+    }
+  });
+};
+document.getElementById('playScaleBtn').onclick = () => {
+  unlockAudio().then(() => {
+    const rootMidi = noteIndex(state.root) + 48;
+    playScale(rootMidi, SCALES[state.scale]);
+  });
+};
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('training').style.display === 'none') return;
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (state.answered) nextRound();
+  } else if (e.key === 'r' || e.key === 'R') {
+    document.getElementById('playRootBtn').click();
+  } else if (e.key === 'p' || e.key === 'P') {
+    document.getElementById('replayBtn').click();
+  } else if (e.key === 's' || e.key === 'S') {
+    document.getElementById('playScaleBtn').click();
+  } else if (e.key >= '1' && e.key <= '9') {
+    const btns = document.querySelectorAll('.note-btn');
+    const idx = parseInt(e.key) - 1;
+    if (idx < btns.length) btns[idx].click();
+  }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+buildSetup();
+</script>
+</body>
+</html>
