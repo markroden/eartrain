@@ -1271,8 +1271,12 @@ function handleGuess(noteName) {
 }
 
 function handleFretClick(string, fret) {
-  if (state.answered) return;
   const midi = STRING_OPEN[string] + fret;
+  if (state.answered) {
+    // After answering, let the user explore by clicking notes to hear them
+    playGuitarNote(midiToFreq(midi), 1.5);
+    return;
+  }
   const noteName = midiToNoteName(midi);
   handleGuess(noteName);
 }
